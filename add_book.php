@@ -28,7 +28,7 @@ if (isset($_POST['add_book'])) {
     
     if ($stmt->execute()) {
         $message = "<p style='color: green;'>Book added successfully!</p>";
-        // Redirect after 2 seconds
+        // Redirect to the dashboard after 2 seconds
         echo "<script>setTimeout(function() { window.location.href = 'librarian_dashboard.php'; }, 2000);</script>";
     } else {
         $message = "<p style='color: red;'>Error adding book: " . $mysqli->error . "</p>";
