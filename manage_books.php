@@ -8,7 +8,7 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] != 'Librarian') {
     exit();
 }
 
-$message = "";
+$message = "";// Feedback message for actions (update/delete)
 $book_id = isset($_GET['book_id']) ? intval($_GET['book_id']) : 0;
 
 // Handle delete action
@@ -34,7 +34,7 @@ if (isset($_POST['update_book']) && $book_id > 0) {
     $publication_year = $_POST['publication_year'];
     $category = $_POST['category'];
     $status = $_POST['status'];
-    
+    // Prepare SQL UPDATE query
     $update_sql = "UPDATE books SET title = ?, author = ?, isbn = ?, publication_year = ?, category = ?, status = ? 
                    WHERE book_id = ?";
     
@@ -43,6 +43,7 @@ if (isset($_POST['update_book']) && $book_id > 0) {
     
     if ($stmt->execute()) {
         $message = "<p style='color: green;'>Book updated successfully!</p>";
+          // Auto-redirect after 2 seconds
         echo "<script>setTimeout(function() { window.location.href = 'librarian_dashboard.php'; }, 2000);</script>";
     } else {
         $message = "<p style='color: red;'>Error updating book: " . $mysqli->error . "</p>";
@@ -62,6 +63,7 @@ if ($book_id > 0) {
     if ($result->num_rows > 0) {
         $book = $result->fetch_assoc();
     } else {
+         // If no book found, go back to dashboard
         header("Location: librarian_dashboard.php");
         exit();
     }
