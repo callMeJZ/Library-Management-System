@@ -1,48 +1,59 @@
 <?php
-// Include database connection. Assumes $mysqli object is defined here.
+// Include database connection (assumes $mysqli is defined here)
 require_once 'db_connect.php';
 
 $books = [];
 $error_message = null;
+$records_per_page = 10; 
 
-// --- SEARCH HANDLING (Simple) ---
-$search_term = isset($_GET['search']) ? trim($_GET['search']) : '';
+// Get and sanitize search term and current page number
+$search_term = trim($_GET['search'] ?? '');
+$current_page = max(1, (int)($_GET['page'] ?? 1)); 
+
 $where_clause = '';
-
-if (!empty($search_term)) {
-    // 1. Prepare search term
-    // Use prepared statements in production code for maximum security, but 
-    // for this simple demonstration, we use real_escape_string to keep it simple.
-    $safe_search_term = "%" . $mysqli->real_escape_string($search_term) . "%";
-
-    // 2. Build WHERE clause (Search by Title, Author, ISBN, or Category)
+if ($search_term) {
+    // Build WHERE clause for Title, Author, ISBN, or Category
+    $safe_term = "%" . $mysqli->real_escape_string($search_term) . "%";
     $where_clause = " 
         WHERE 
-            title LIKE '{$safe_search_term}' OR 
-            author LIKE '{$safe_search_term}' OR 
-            isbn LIKE '{$safe_search_term}' OR 
-            category LIKE '{$safe_search_term}'
+            title LIKE '{$safe_term}' OR 
+            author LIKE '{$safe_term}' OR 
+            isbn LIKE '{$safe_term}' OR 
+            category LIKE '{$safe_term}'
     ";
 }
 
-// Check if the database connection succeeded
-if ($mysqli && !$mysqli->connect_error) {
+
+// 1. Get total count of books (for pagination)
+$count_sql = "SELECT COUNT(*) AS total FROM books {$where_clause}";
+$count_result = $mysqli->query($count_sql);
+
+$total_books = 0;
+$total_pages = 1;
+
+if ($count_result === FALSE) {
+    $error_message = "Database Query Error: " . $mysqli->error;
+} elseif ($count_row = $count_result->fetch_assoc()) {
+    $total_books = (int)$count_row['total'];
+    $total_pages = ceil($total_books / $records_per_page);
     
-    // SQL Query to fetch filtered books (or all books if no search term)
+    // Calculate offset for current page
+    $current_page = min($current_page, $total_pages);
+    $current_page = max(1, $current_page); 
+    $offset = ($current_page - 1) * $records_per_page;
+}
+
+// 2. Fetch paginated book data
+if (!$error_message) { 
     $sql = "
         SELECT 
-            book_id, 
-            title, 
-            author, 
-            isbn, 
-            publication_year, 
-            category,
-            status
+            book_id, title, author, isbn, publication_year, category, status
         FROM 
             books
         {$where_clause}
         ORDER BY 
-            title ASC;
+            title ASC
+        LIMIT {$records_per_page} OFFSET {$offset};
     ";
 
     $result = $mysqli->query($sql);
@@ -54,11 +65,13 @@ if ($mysqli && !$mysqli->connect_error) {
             $books[] = $row;
         }
     }
-
-    $mysqli->close();
-} else {
-    $error_message = "Database connection failed.";
 }
+
+// Close resources
+if (isset($count_result) && $count_result instanceof mysqli_result) { $count_result->free(); }
+if (isset($result) && $result instanceof mysqli_result) { $result->free(); }
+if (isset($mysqli)) { $mysqli->close(); }
+
 ?>
 
 <!DOCTYPE html>
@@ -68,7 +81,7 @@ if ($mysqli && !$mysqli->connect_error) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Book Catalog</title>
     <style>
-        /* Basic CSS for a clean, simple look */
+        /* Basic styles for structure and typography */
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
         .search-form { margin-bottom: 20px; display: flex; gap: 10px; }
@@ -78,24 +91,46 @@ if ($mysqli && !$mysqli->connect_error) {
         .book-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .book-table th, .book-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         .book-table th { background-color: #f2f2f2; font-weight: bold; }
-        /* Status styling */
+        /* Status colors */
         .status-Available { color: green; font-weight: bold; }
         .status-Borrowed { color: red; font-weight: bold; }
         .error { color: red; font-weight: bold; padding: 10px; }
+        
+        /* Pagination layout */
+        .pagination { 
+            margin-top: 20px; 
+            text-align: center; 
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .pagination a {
+            color: #333;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+            border-radius: 4px;
+        }
+        .pagination a.active {
+            background-color: #007bff; 
+            color: white;
+            border: 1px solid #007bff;
+        }
+        .pagination a:hover:not(.active) {background-color: #f2f2f2;}
     </style>
 </head>
 <body>
 
     <h1>Library Book Catalog</h1>
 
-    <!-- Search Form (Frontend Requirement Met) -->
+    <!-- Search Form -->
     <form method="GET" class="search-form">
         <input type="text" name="search" placeholder="Search by Title, Author, ISBN, or Category" 
                value="<?= htmlspecialchars($search_term) ?>">
         <button type="submit">Search</button>
         <?php if (!empty($search_term)): ?>
-            <!-- Clear search button -->
-            <a href="catalog.php" style="padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333; align-self: center;">Clear Search</a>
+            <!-- Clear Search link -->
+            <a href="catalog.php?page=<?= $current_page ?>" style="padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333; align-self: center;">Clear Search</a>
         <?php endif; ?>
     </form>
 
@@ -103,10 +138,24 @@ if ($mysqli && !$mysqli->connect_error) {
         <p class="error">Error: <?= $error_message ?></p>
     <?php elseif (empty($books) && !empty($search_term)): ?>
         <p>No books found matching "<?= htmlspecialchars($search_term) ?>".</p>
-    <?php elseif (empty($books)): ?>
+    <?php elseif (empty($books) && $total_books == 0): ?>
         <p>No books found in the catalog.</p>
     <?php else: ?>
-        <p>Showing <?= count($books) ?> books.</p>
+
+        <!-- Showing results summary -->
+        <p>
+            <?php if (!empty($search_term)): ?>
+                Search results: 
+            <?php endif; ?>
+            Showing 
+            <?= $total_books > 0 ? (($current_page - 1) * $records_per_page) + 1 : 0 ?> 
+            to 
+            <?= (($current_page - 1) * $records_per_page) + count($books) ?> 
+            of 
+            <?= $total_books ?> books total.
+        </p>
+
+        <!-- Book data table -->
         <table class="book-table">
             <thead>
                 <tr>
@@ -133,6 +182,31 @@ if ($mysqli && !$mysqli->connect_error) {
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <!-- PAGINATION CONTROLS -->
+        <?php if ($total_pages > 1): ?>
+            <div class="pagination">
+                <?php 
+                // Build base URL for pagination links, keeping search term
+                $base_query = http_build_query(array_filter(['search' => $search_term]));
+                $base_url = "catalog.php?" . $base_query . (empty($base_query) ? '' : '&');
+                ?>
+
+                <?php if ($current_page > 1): ?>
+                    <a href="<?= $base_url ?>page=<?= $current_page - 1 ?>">Previous</a>
+                <?php endif; ?>
+
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <a href="<?= $base_url ?>page=<?= $i ?>" class="<?= ($i == $current_page) ? 'active' : ''; ?>"><?= $i ?></a>
+                <?php endfor; ?>
+
+                <?php if ($current_page < $total_pages): ?>
+                    <a href="<?= $base_url ?>page=<?= $current_page + 1 ?>">Next</a>
+                <?php endif; ?>
+                
+            </div>
+        <?php endif; ?>
+
     <?php endif; ?>
 
 </body>
