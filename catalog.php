@@ -1,6 +1,15 @@
 <?php
 // Include database connection (assumes $mysqli is defined here)
 require_once 'db_connect.php';
+session_start(); // Start the session to access the user's role
+
+// --- ADDED LOGIC FOR BACK BUTTON ---
+// Determine the correct dashboard link based on the session role
+$dashboard_url = 'user_dashboard.php'; // Default if role is not set or is 'User'
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'Librarian') {
+    $dashboard_url = 'librarian_dashboard.php';
+}
+// --- END ADDED LOGIC ---
 
 $books = [];
 $error_message = null;
@@ -84,6 +93,20 @@ if (isset($mysqli)) { $mysqli->close(); }
         /* Basic styles for structure and typography */
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
+        .back-link { /* Style for the new back button */
+            display: inline-block;
+            padding: 8px 15px;
+            margin-bottom: 20px;
+            background-color: #6c757d; 
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .back-link:hover {
+            background-color: #5a6268;
+        }
         .search-form { margin-bottom: 20px; display: flex; gap: 10px; }
         .search-form input[type="text"] { padding: 8px; width: 300px; border: 1px solid #ccc; border-radius: 4px; }
         .search-form button { padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -120,6 +143,11 @@ if (isset($mysqli)) { $mysqli->close(); }
     </style>
 </head>
 <body>
+
+    <!-- ADDED BACK BUTTON -->
+    <a href="<?= htmlspecialchars($dashboard_url) ?>" class="back-link">
+        &larr; Back to Dashboard
+    </a>
 
     <h1>Library Book Catalog</h1>
 
