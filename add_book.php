@@ -7,7 +7,6 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] != 'Librarian') {
     header("Location: login.php");
     exit();
 }
-
 $message = "";
 
 // Handle form submission
