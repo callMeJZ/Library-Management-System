@@ -20,10 +20,25 @@ if(isset($_POST['login'])) {
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
-        
+      
         if($user['role'] == 'Librarian') {
             header("Location: librarian_dashboard.php");
             exit();
+
+        if($result->num_rows > 0) {
+            $user = $result->fetch_assoc();
+            
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'];
+            
+            if($user['role'] == 'Librarian') {
+                header("Location: librarian_dashboard.php");
+                exit();
+            } else {
+                header("Location: user_dashboard.php");
+                exit();
+            }
         } else {
             header("Location: user_dashboard.php");
             exit();
