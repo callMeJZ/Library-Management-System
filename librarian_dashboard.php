@@ -217,29 +217,12 @@ $result = $mysqli->query($sql);
         <div class="action-buttons">
             <a href="add_book.php"><button class="add-book-btn">+ Add Book</button></a>
             <a href="catalog.php"><button class="view-all-btn">View All Books</button></a>
-</head>
-<body>
-    <div>
-        <h1>Librarian Dashboard</h1>
-        <div style="text-align: right; margin-bottom: 20px;">
-            <p>Welcome, <?php echo $_SESSION['username']; ?>!</p>
-            <a href="logout.php"><button>Logout</button></a>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <a href="add_book.php"><button>+ Add Book</button></a>
-                <a href="catalog.php"><button>View All Books</button></a>
-            </div>
-
         </div>
 
         <h2>Recent Books</h2>
         
         <?php if ($result->num_rows > 0): ?>
             <table class="book-table">
-
-            <table border="1" cellpadding="10" cellspacing="0" style="width: 100%;">
                 <thead>
                     <tr>
                         <th>Title</th>
@@ -270,11 +253,6 @@ $result = $mysqli->query($sql);
                                    onclick="return confirm('Are you sure you want to delete this book?')">
                                     <button class="delete-btn">Delete</button>
                                 </a>
-                            <td><?php echo htmlspecialchars($book['status']); ?></td>
-                            <td>
-                                <a href="manage_books.php?book_id=<?php echo $book['book_id']; ?>"><button>Edit</button></a>
-                                <a href="manage_books.php?book_id=<?php echo $book['book_id']; ?>&action=delete" 
-                                   onclick="return confirm('Are you sure you want to delete this book?')"><button>Delete</button></a>
                             </td>
                         </tr>
                     <?php endwhile; ?>
@@ -284,7 +262,6 @@ $result = $mysqli->query($sql);
             <div class="no-books">
                 <p>No books found in the library.</p>
             </div>
-            <p>No books found in the library.</p>
         <?php endif; ?>
     </div>
 </body>
