@@ -30,7 +30,7 @@ if ($search_term) {
     ";
 }
 
-//Get total count of books (for pagination)
+// 1. Get total count of books (for pagination)
 $count_sql = "SELECT COUNT(*) AS total FROM books {$where_clause}";
 $count_result = $mysqli->query($count_sql);
 
@@ -309,7 +309,9 @@ if (isset($mysqli)) { $mysqli->close(); }
         <a href="<?= htmlspecialchars($dashboard_url) ?>" class="back-link">
             &larr; Back to Dashboard
         </a>
+
         <h1>Library Book Catalog</h1>
+
         <div class="search-section">
             <form method="GET" class="search-form">
                 <input type="text" name="search" placeholder="Search by Title, Author, ISBN, or Category" 
@@ -320,7 +322,7 @@ if (isset($mysqli)) { $mysqli->close(); }
                 <?php endif; ?>
             </form>
         </div>
-        
+
         <?php if ($error_message): ?>
             <div class="error">Error: <?= htmlspecialchars($error_message) ?></div>
         <?php elseif (empty($books) && !empty($search_term)): ?>

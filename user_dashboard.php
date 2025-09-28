@@ -166,7 +166,7 @@ $result = $mysqli->query($sql);
         </div>
 
         <h2>Recent Books</h2>
-         // Check if the database query returned one or more rows (books).
+        
         <?php if ($result->num_rows > 0): ?>
             <table class="book-table">
                 <thead>
@@ -180,7 +180,6 @@ $result = $mysqli->query($sql);
                     </tr>
                 </thead>
                 <tbody>
-                    // Loop through each row of the result set.
                     <?php while ($book = $result->fetch_assoc()): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($book['title']); ?></td>
